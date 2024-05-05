@@ -1,6 +1,9 @@
+import { createReadStream, createWriteStream } from "fs";
 import { NextResponse } from "next/server";
+import { promisify } from "util";
 const fs = require("fs").promises;
 const { exec } = require("child_process");
+const archiver = require("archiver");
 
 export async function POST(request: any, response: any) {
   try {
@@ -21,6 +24,18 @@ export async function POST(request: any, response: any) {
       await fs.mkdir(folderName);
       await copyFileAsync("playlist.m3u8", `${folderName}/playlist.m3u8`);
       await execFFmpeg(folderName);
+
+      console.log(formData.get("type"));
+
+      if (formData.get("type") === "download") {
+        const zipFilePath = `./public/${originalname}.zip`;
+        await zipFolder(folderName, zipFilePath);
+      }
+
+      return NextResponse.json(
+        { data: formData.get("type") === "download" ? originalname : "success" },
+        { status: 200 }
+      );
     }
   } catch (error) {
     console.error("Error:", error);
@@ -90,7 +105,7 @@ function getBufferSize(bitrate: any) {
 
 function executeCommand(command: any, bitrate: any) {
   return new Promise<void>((resolve, reject) => {
-    exec(command, (err: any, output: any) => {
+    exec(command, { maxBuffer: 10024 * 10024 }, (err: any, output: any) => {
       if (err) {
         console.error("could not execute command: ", err);
         reject(new Error("Internal Server Error"));
@@ -100,4 +115,20 @@ function executeCommand(command: any, bitrate: any) {
       }
     });
   });
+}
+
+async function zipFolder(sourceFolder: string, zipFilePath: string) {
+  try {
+    console.log("zipFilePath", zipFilePath);
+    const output = createWriteStream(zipFilePath);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    archive.pipe(output);
+    archive.directory(sourceFolder, false); // Remove the "await" keyword here
+    await archive.finalize(); // Add parentheses to invoke finalize as a function
+    console.log("Folder zipped successfully");
+  } catch (error) {
+    console.error("Error zipping folder:", error);
+    throw new Error("Error zipping folder");
+  }
 }

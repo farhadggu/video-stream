@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
 import { IoCloudUploadOutline, IoVideocamOutline } from "react-icons/io5";
 import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useRef, useState } from "react";
 
 export default function Home() {
   const [video, setVideo] = useState();
@@ -11,6 +12,7 @@ export default function Home() {
   const [folderName, setFolderName] = useState("");
   const [message, setMessage] = useState("");
   const inputRef = useRef<any>(null);
+  const [type, setType] = useState("download" as any);
 
   const handleVideos = async (e: any) => {
     console.log("yakhchi baba");
@@ -27,24 +29,58 @@ export default function Home() {
 
     formData.append("file", video as any); // Add the video to formData
     formData.append("name", folder); // Add the video to formData
+    formData.append("type", type); // Add the video to formData
 
     fetch("/api/upload", {
       method: "POST",
       body: formData,
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        console.log(data);
-        setLoading(false);
-        setMessage("Video Has Been Uploaded Sucessfully");
-      })
-      .catch((err) => {
-        toast.error("Folder already exists");
-      });
+    }).then(async (res) => {
+      const data = await res.json();
+      console.log(data);
+      setLoading(false);
+
+      if (data.error) {
+        return toast.error("Folder already exists");
+      }
+
+      if (type === "download") {
+        const downloadLink = document.createElement("a");
+        downloadLink.href = `/${data.data}.zip`;
+        downloadLink.click();
+        toast.success("Zip Downloaded");
+      } else {
+        toast.success(data);
+      }
+    });
   };
 
   return (
-    <main className="h-screen flex items-center justify-center ">
+    <main className="h-screen flex flex-col items-center justify-center ">
+      <div className="flex items-center justify-center gap-10 mb-10">
+        <button
+          onClick={() => setType("download")}
+          className="border p-2 px-6 rounded-lg bg-[#1d1d1d] transition-all duration-300 hover:scale-105"
+          style={{
+            backgroundColor: type === "download" ? "#ededed" : "#1d1d1d",
+            color: type === "download" ? "#000" : "#fff",
+            transform: type === "download" ? "scale(1.2)" : "scale(1)",
+          }}
+        >
+          ZipDownload
+        </button>
+        <button
+          onClick={() => setType("stream")}
+          className="border p-2 px-6 rounded-lg bg-[#1d1d1d] transition-all duration-300 hover:scale-105"
+          style={{
+            backgroundColor: type === "stream" ? "#ededed" : "#1d1d1d",
+            color: type === "stream" ? "#1d1d1d" : "#fff",
+            transform: type === "stream" ? "scale(1.2)" : "scale(1)",
+          }}
+        >
+          JustStream
+        </button>
+      </div>
+
       <div className="container bg-[#1d1d1d] max-h-[470px] h-full py-4 p-8 rounded-2xl border border-[#4e4e4e]">
         <div className="border-b justify-between py-2 flex items-center">
           <h3 className="text-4xl"> NahalGasht Video Stream Uploader</h3>
@@ -113,7 +149,7 @@ export default function Home() {
         )}
       </div>
 
-      <ToastContainer position="bottom-left" />
+      <ToastContainer position="bottom-left" theme="dark" />
     </main>
   );
 }
