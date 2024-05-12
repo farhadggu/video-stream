@@ -58,9 +58,9 @@ async function execFFmpeg(folderName: any) {
     { resolution: "144p", bitrate: "250k" },
     { resolution: "240p", bitrate: "500k" },
     { resolution: "360p", bitrate: "800k" },
-    { resolution: "480p", bitrate: "1400k" },
-    { resolution: "720p", bitrate: "2800k" },
-    { resolution: "1080p", bitrate: "5000k" },
+    { resolution: "480p", bitrate: "800k" },
+    { resolution: "720p", bitrate: "800k" },
+    { resolution: "1080p", bitrate: "800k" },
   ];
 
   for (const { resolution, bitrate } of resolutions) {
